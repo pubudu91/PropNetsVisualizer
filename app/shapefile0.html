@@ -29,8 +29,7 @@
   <script type="text/javascript" src="shapetest/index.js"></script>
   <!-- d3-tip -->
   <script src="shapetest/shp.min.js" charset="utf-8"></script>
-  <script src="propnets.js" charset="utf-8"></script>
-  <script src="shapetest/fileupload.js" charset="utf-8"></script>
+
   <style>
     html,
     body {
@@ -63,25 +62,12 @@
       </paper-tabs>
 
       <iron-pages selected="0">
-        <!-- TAB #1 -->
         <div>
           <input type="file" id="files" name="files[]" single />
           <select name="selectfile" id="selectfile" hidden="true"></select>
           <input type="submit" id="upload" value="Draw Map" disabled="true" />
         </div>
-
-        <!-- TAB #2 -->
-        <div>
-          <input type="file" id="csvfiles" name="files[]" multiple />
-          <output id="list"></output>
-          <input type="submit" id="parse" />
-
-          <div id="details"></div>
-          <br />
-          <div id="decoded" style="width: 250px;"></div>
-        </div>
-
-        <!-- TAB #3 -->
+        <div>Two</div>
         <div>Three</div>
       </iron-pages>
 
@@ -129,8 +115,8 @@
       var pages = document.querySelector('iron-pages');
       pages.select(this.selected);
     });
-    console.log(DecodedData);
   </script>
+  <script src="propnets.js" charset="utf-8"></script>
   <script type="text/javascript">
     PropNets.init('files', 'upload', 'selectfile');
   </script>
