@@ -15,6 +15,15 @@ var PropNets = (function() {
   var uploadDOM;
   var selectfileDOM;
 
+  /* variables representing data related to the visualizations */
+  var flowdata;
+  var csvdata;
+
+  MOD.setData = function(data) {
+    flowdata = data;
+    // console.log(flowdata);
+  };
+
   MOD.init = function(f, u, s) {
     /*
      * When a file is added by the user, check if the shape file contains several shape files in
@@ -32,7 +41,7 @@ var PropNets = (function() {
     // read the shape file and draw the map when the user clicks the Draw Map button
     uploadDOM.addEventListener('click', function(evt) {
       if (decodedShapeFile == null)
-        alert("Please select a file");
+        alert('Please select a file');
       else {
         var mapfile;
 
@@ -56,7 +65,7 @@ var PropNets = (function() {
       }
 
     }, false);
-  }
+  };
 
   function readShapeFile() {
     var files = filesDOM.files;
@@ -67,17 +76,17 @@ var PropNets = (function() {
     }
 
     var file = files[0];
-    reader = new FileReader();
+    var reader = new FileReader();
 
     // If we use onloadend, we need to check the readyState.
     reader.onloadend = function(evt) {
-      if (evt.target.readyState == FileReader.DONE) { // DONE == 2
-        console.log("file passed on to the shape file reader");
+      if (evt.target.readyState === FileReader.DONE) { // DONE == 2
+        console.log('file passed on to the shape file reader');
 
         // pass the shape file read, to the shapefile js library to convert it to geojson
         shp(reader.result).then(function(geojson) {
           var endTime = new Date().getTime();
-          console.log("file reading completed: " + ((endTime - startTime) / 1000.0) + " s elapsed");
+          console.log('file reading completed: ' + ((endTime - startTime) / 1000.0) + ' s elapsed');
 
           reset(); // reset all the variables before drawing the new map
 
@@ -105,11 +114,12 @@ var PropNets = (function() {
       }
     };
 
-    console.log("Starting to read the file");
+    console.log('Starting to read the file');
     startTime = new Date().getTime();
     reader.readAsArrayBuffer(file);
   }
 
+  // --------------------        DRAW MAP FUNCTION           --------------------------
   function drawMap(json) {
     console.log("Starting to draw");
     startTime = new Date().getTime();
@@ -119,19 +129,11 @@ var PropNets = (function() {
     width = $(window).width() - 17;
     height = $(window).height() - header.clientHeight - 5;
 
-    tip = d3.tip().attr('class', 'd3-tip')
-      .html(function(d) {
-        if (currentMap == 0)
-          return d.properties["NAME_ISO"];
-        else
-          return d.properties["NAME_" + currentMap];
-      });
+    var map = d3.select('#map').select('svg').remove();
 
-    var map = d3.select("#map").select("svg").remove();
-
-    map = d3.select("#map").append("svg")
-      .attr("width", width)
-      .attr("height", height);
+    map = d3.select('#map').append('svg')
+      .attr('width', width)
+      .attr('height', height);
 
     // Create a unit projection.
     projection = d3.geo.mercator()
@@ -140,23 +142,6 @@ var PropNets = (function() {
 
     // Create a path generator.
     path = d3.geo.path().projection(projection);
-    placeToolTip = function(d) {
-      var bbox = path.bounds(d);
-      var centroid = path.centroid(d);
-      //   console.log("bounding box: " + bbox);
-      //   console.log("centroid: " + centroid);
-      //   console.log(centroid[1]+", "+centroid[0]+", "+(bbox[1][0] - bbox[0][0])+", "+(bbox[1][1] - bbox[0][1]));
-      var node = d3.select(d);
-      console.log(node);
-      var width = bbox[1][0] - bbox[0][0];
-      var height = bbox[1][1] - bbox[0][1];
-
-      var voffset = (centroid[1] - bbox[0][1]);
-      var hoffset = (centroid[0] - bbox[0][0]) - width / 2;
-      return [voffset, hoffset];
-    };
-
-    tip.offset(placeToolTip);
 
     // Compute the bounds of a feature of interest, then derive scale & translate.
     var b = path.bounds(json),
@@ -171,10 +156,9 @@ var PropNets = (function() {
       .translate([0, 0])
       .scale(1)
       .scaleExtent([0.5, 15])
-      .on("zoom", zoomed);
+      .on('zoom', zoomed);
 
-
-    g = map.append("g");
+    g = map.append('g');
 
     //   hover = function(d) {
     //       var bbox = path.bounds(d);
@@ -188,55 +172,146 @@ var PropNets = (function() {
     //       div.innerHTML = d.properties.NAME_1;
     //       console.log(d.properties.NAME_1);
     //   };
+    var tip = setupToolTips();
 
     map.call(zoom);
     g.call(tip);
 
-    g.selectAll("path").data(json.features).enter().append("path")
-      .attr("d", path)
-      .attr("class", function(d) {
-        return "subunit " + d.properties.NAME_1;
+    //'#' + ((1 << 24) * Math.random() | 0).toString(16);
+    g.selectAll('path').data(json.features).enter().append('path')
+      .attr('d', path)
+      .attr('class', function(d) {
+        return 'subunit ' + d.properties.NAME_1.toLowerCase();
       })
-      .style("fill", function(d) {
-        return "#" + ((1 << 24) * Math.random() | 0).toString(16);
+      .attr('name', function(d) {
+        return d.properties.NAME_1.toLowerCase();
       })
-      .style("stroke-width", "1")
-      .style("stroke", "black")
-      .style("vector-effect", "non-scaling-stroke")
-      //  .on("click",clicked);
+      .style('fill', '#f7d1ad')
+      .style('stroke-width', '1')
+      .style('stroke', 'black')
+      .style('vector-effect', 'non-scaling-stroke')
+      //  .on('click',clicked);
       //  .text(function(d) { return d.properties.NAME_1; });;
-      .on("mouseover", tip.show)
-      .on("mouseout", tip.hide);
-    //  .on("mouseover",hover);
+      .on('mouseover', tip.show)
+      .on('mouseout', tip.hide);
+    //  .on('mouseover',hover);
 
     var endTime = new Date().getTime();
-    console.log("drawing complete: " + ((endTime - startTime) / 1000.0) + " s elapsed");
+    console.log('drawing complete: ' + ((endTime - startTime) / 1000.0) + ' s elapsed');
+  }
+  // ---------------------------- END OF DRAW MAP FUNCTION -------------------------------------
 
+  function setupToolTips() {
+    var tip = d3.tip().attr('class', 'd3-tip')
+      .html(function(d) {
+        if (currentMap == 0)
+          return d.properties["NAME_ISO"];
+        else
+          return d.properties["NAME_" + currentMap];
+      });
+
+    var placeToolTip = function(d) {
+      var bbox = path.bounds(d);
+      var centroid = path.centroid(d);
+
+      var width = bbox[1][0] - bbox[0][0];
+      // var height = bbox[1][1] - bbox[0][1];
+
+      var voffset = (centroid[1] - bbox[0][1]);
+      var hoffset = (centroid[0] - bbox[0][0]) - width / 2;
+      return [voffset, hoffset];
+    };
+
+    tip.offset(placeToolTip);
+
+    return tip;
+  }
+
+  MOD.visualize = function() {
+    if (flowdata == null) {
+      alert('No data available for visualizing. Please add a data file');
+      return;
+    }
+    console.log("flowdata: "+flowdata.length);
+    var baseTime = Date.parse(flowdata[0].timestamp);
+    var maxTime = Date.parse(flowdata[flowdata.length - 1].timestamp);
+    for (var i = 0; i < flowdata.length; i++) {
+      // var dateStringAr = flowdata[i].timestamp.split('/');
+      var relativeTime = Date.parse(flowdata[i].timestamp) - baseTime;
+
+      connectLocations(flowdata[i].source, flowdata[i].destination, relativeTime/(maxTime - baseTime)*30000);
+      console.log(flowdata[i].source.toLowerCase() + ' ' + flowdata[i].destination.toLowerCase());
+    }
+  };
+
+  function connectLocations(name1, name2, delay) {
+    var loc1 = path.centroid(d3.select("[name=\"" + name1.toLowerCase() + "\"]").datum());
+    var loc2 = path.centroid(d3.select("[name=\"" + name2.toLowerCase() + "\"]").datum());
+
+    var connector = g.append('line')
+      .style('stroke', 'blue')
+      .attr('x1', loc1[0])
+      .attr('y1', loc1[1])
+      .attr('x2', loc2[0])
+      .attr('y2', loc2[1])
+      .on('mouseover', function() {
+        var line = d3.select(this);
+        line.style('stroke', 'red')
+          .style('stroke-width', '3px');
+
+      })
+      .on('mouseout', function() {
+        var line = d3.select(this);
+        line.style('stroke', 'blue')
+          .style('stroke-width', '1px');
+      });
+
+    console.log(connector);
+    var xdif = loc2[0] - loc1[0];
+    var ydif = loc2[1] - loc1[1];
+    var totalLength = Math.sqrt(xdif * xdif + ydif * ydif);
+    console.log('total line length: ' + totalLength);
+
+    connector
+      .attr('stroke-dasharray', totalLength + ' ' + totalLength)
+      .attr('stroke-dashoffset', totalLength)
+      .transition()
+      .duration(5000)
+      .delay(delay)
+      .ease('linear')
+      .attr('stroke-dashoffset', 0);
+
+    // svg.on("click", function(){
+    //   path
+    //     .transition()
+    //     .duration(2000)
+    //     .ease("linear")
+    //     .attr("stroke-dashoffset", totalLength);
   }
 
   // function for handling the zooming when clicked on a place on the map
-  function clicked(d) {
-    var centroid = path.centroid(d),
-      translate = projection.translate();
-
-    projection.translate([
-      translate[0] - centroid[0] + width / 2,
-      translate[1] - centroid[1] + height / 2
-    ]);
-
-    zoom.translate(projection.translate());
-
-    g.selectAll("path").transition()
-      .duration(700)
-      .attr("d", path);
-  }
+  // function clicked(d) {
+  //   var centroid = path.centroid(d),
+  //     translate = projection.translate();
+  //
+  //   projection.translate([
+  //     translate[0] - centroid[0] + width / 2,
+  //     translate[1] - centroid[1] + height / 2
+  //   ]);
+  //
+  //   zoom.translate(projection.translate());
+  //
+  //   g.selectAll('path').transition()
+  //     .duration(700)
+  //     .attr('d', path);
+  // }
 
   // function for handling the zooming
   function zoomed() {
     // projection.translate(d3.event.translate).scale(d3.event.scale);
     // g.selectAll("path").attr("d", path);
-    g.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-    console.log("zoomed");
+    g.attr('transform', 'translate(' + d3.event.translate + ')scale(' + d3.event.scale + ')');
+    console.log('zoomed');
   }
 
   function reset() {
@@ -246,11 +321,43 @@ var PropNets = (function() {
     path = null;
     zoom = null;
 
-    d3.select("#selectfile").selectAll("option").remove();
-    document.getElementById("selectfile").hidden = true;
+    d3.select('#selectfile').selectAll('option').remove();
+    document.getElementById('selectfile').hidden = true;
   }
 
-  
+  // DATA VISUALIZATION PART
+
+  MOD.readCSVFile = function(csvfiles) {
+
+    var files = document.getElementById(csvfiles).files;
+
+    if (!files.length) {
+      alert('Please select a file!');
+      return;
+    }
+
+    var file = files[0];
+    var reader = new FileReader();
+
+    // If we use onloadend, we need to check the readyState.
+    reader.onloadend = function(evt) {
+      if (evt.target.readyState == FileReader.DONE) { // DONE == 2
+        var filetype = file.name.toLowerCase().split('.').pop();
+        var temp = d3.csv.parse(evt.target.result);
+        console.log(temp);
+
+        if(temp[0].length == 3)
+          csvdata = temp;
+        else {
+          flowdata = temp;
+        }
+      }
+    };
+
+    reader.readAsBinaryString(file);
+  };
+
+
 
   return MOD;
 }());

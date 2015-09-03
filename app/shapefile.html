@@ -3,7 +3,7 @@
 
 <head>
 
-  <title>unquote</title>
+  <title>PropNets Visualizer</title>
 
   <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, user-scalable=yes">
 
@@ -72,9 +72,15 @@
 
         <!-- TAB #2 -->
         <div>
+          <input type="file" id="csvnetwork" name="files[]" multiple />
+          <!-- <output id="list"></output> -->
+          <input type="submit" id="parsenetwork" />
+          <!-- <input type="submit" id="visualize" value="Visualize"/> -->
+
           <input type="file" id="csvfiles" name="files[]" multiple />
           <output id="list"></output>
           <input type="submit" id="parse" />
+          <input type="submit" id="visualize" value="Visualize"/>
 
           <div id="details"></div>
           <br />
@@ -129,10 +135,25 @@
       var pages = document.querySelector('iron-pages');
       pages.select(this.selected);
     });
-    console.log(DecodedData);
+
+
   </script>
   <script type="text/javascript">
     PropNets.init('files', 'upload', 'selectfile');
+    // DataHandler.init();
+    document.getElementById('parsenetwork').addEventListener('click', function() {
+      PropNets.readCSVFile('csvnetwork');
+    })
+
+    document.getElementById('parse').addEventListener('click', function() {
+      // PropNets.setData(DataHandler.decodedData);
+      PropNets.readCSVFile('csvfiles');
+    })
+
+    document.getElementById('visualize').addEventListener('click', function() {
+      // PropNets.setData(DataHandler.decodedData);
+      PropNets.visualize();
+    })
   </script>
   <!-- <script type="text/javascript">
     var decodedShapeFile;

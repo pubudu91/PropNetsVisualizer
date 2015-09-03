@@ -1,36 +1,38 @@
-var DecodedData;
-$(document).ready(function() {
+// $(document).ready(function() {
+var DataHandler = (function() {
+  var MOD = MOD || {};
+  // MOD.decodedData;
 
-  if (window.File && window.FileReader && window.FileList && window.Blob) {
+  MOD.init = function() {
+      if (window.File && window.FileReader && window.FileList && window.Blob) {
 
-    document.getElementById('parse').addEventListener('click', function(evt) {
-      // if (evt.target.tagName.toLowerCase() == 'button') {
-      readBlob();
-      // }
-    }, false);
+        document.getElementById('parse').addEventListener('click', function(evt) {
+          // if (evt.target.tagName.toLowerCase() == 'button') {
+          readBlob();
+          // }
+        }, false);
 
-  } else {
-    alert('The File APIs are not fully supported in this browser.');
-  }
-
-  /* Function for decoding the input data file. This acts as the interface for decoding.
-   * From this, the decoding is delegated to a function which can handle the particular type
-   * of file input by the user
-   */
+      } else {
+        alert('The File APIs are not fully supported in this browser.');
+      }
+    };
+    /* Function for decoding the input data file. This acts as the interface for decoding.
+     * From this, the decoding is delegated to a function which can handle the particular type
+     * of file input by the user
+     */
   function decode(data, filetype) {
     switch (filetype) {
       case 'csv':
-        decodeCSV(data);
-        break;
+        return decodeCSV(data);
       default:
         alert('Unsupported data format');
     }
   }
 
   function decodeCSV(txtdata) {
-    $.getScript("shapetest/csv.min.js", function() {
+    $.getScript('shapetest/csv.min.js', function() {
       var data = $.csv.toArrays(txtdata);
-      html = "";
+      html = '';
       //console.log(data);
       for (var row in data) {
         html += '<tr>\r\n';
@@ -41,10 +43,22 @@ $(document).ready(function() {
         }
         html += '</tr>\r\n';
       }
-      DecodedData = data;
+      MOD.decodedData = toAssociativeArray(data);
       $('#decoded').html(html);
-      // console.log(DecodedData);
+      return data;
     });
+  }
+
+  function toAssociativeArray(data) {
+    var ascData = {};
+
+    for (var i = 1; i < data.length; i++) {
+      ascData[i-1] = {};
+      for(var j=0; j < data[i].length; j++)
+        ascData[i-1][data[0][j]] = data[i][j];
+    }
+
+    return ascData;
   }
 
   function readBlob() {
@@ -74,4 +88,7 @@ $(document).ready(function() {
 
     reader.readAsBinaryString(file);
   }
-});
+
+  return MOD;
+}());
+// });
