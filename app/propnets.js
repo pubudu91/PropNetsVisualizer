@@ -16,8 +16,20 @@ var PropNets = (function() {
   var selectfileDOM;
 
   /* variables representing data related to the visualizations */
+
+  /* This variable holds the parsed CSV file containing the flow data and the status
+   * updates. Any flow data required can and should be accessed through this.
+   */
   var flowdata;
+
+  /* This variable holds the parsed CSV file containing the network data
+   * This only holds details related to the nodes used in the network and the
+   * weights of the edges connecting them.
+   */
   var csvdata;
+
+  /* MAP COLOURS */
+  var basecolour = '#f7d1ad';
 
   MOD.setData = function(data) {
     flowdata = data;
@@ -186,7 +198,7 @@ var PropNets = (function() {
       .attr('name', function(d) {
         return d.properties.NAME_1.toLowerCase();
       })
-      .style('fill', '#f7d1ad')
+      .style('fill', basecolour)
       .style('stroke-width', '1')
       .style('stroke', 'black')
       .style('vector-effect', 'non-scaling-stroke')
@@ -232,28 +244,50 @@ var PropNets = (function() {
       alert('No data available for visualizing. Please add a data file');
       return;
     }
-    console.log("flowdata: "+flowdata.length);
-    var baseTime = Date.parse(flowdata[0].timestamp);
-    var maxTime = Date.parse(flowdata[flowdata.length - 1].timestamp);
-    for (var i = 0; i < flowdata.length; i++) {
-      // var dateStringAr = flowdata[i].timestamp.split('/');
-      var relativeTime = Date.parse(flowdata[i].timestamp) - baseTime;
 
-      connectLocations(flowdata[i].source, flowdata[i].destination, relativeTime/(maxTime - baseTime)*30000);
-      console.log(flowdata[i].source.toLowerCase() + ' ' + flowdata[i].destination.toLowerCase());
+    console.log("flowdata: " + flowdata.length);
+    var baseTime = Date.parse(flowdata[0].timestamp); // timestamp of the first record
+    var maxTime = Date.parse(flowdata[flowdata.length - 1].timestamp); // timestamp of the last record
+
+    for (var i = 0; i < flowdata.length; i++) {
+      var relativeTime = Date.parse(flowdata[i].timestamp) - baseTime;
+      var src = getDatumByName(flowdata[i].source);
+      var dest = getDatumByName(flowdata[i].destination);
+
+      connectLocations(src, dest, relativeTime / (maxTime - baseTime) * 30000);
+      if (flowdata[i].source_infected.toLowerCase() == 'true') {
+        // src.style('fill', 'red');
+        d3.select('[name=\"' + flowdata[i].source.toLowerCase() + '\"]')
+            .transition()
+            .duration(500)
+            .delay(relativeTime / (maxTime - baseTime) * 30000)
+            .ease('linear')
+            .style('fill', 'red');
+        // console.log("inside infected: " + '[name=\"' + flowdata[i].source.toLowerCase() + '\"]');
+      }
+
+      if (flowdata[i].destination_infected.toLowerCase() == 'true') {
+        d3.select('[name=\"' + flowdata[i].destination.toLowerCase() + '\"]')
+            .transition()
+            .duration(500)
+            .delay(relativeTime / (maxTime - baseTime) * 30000)
+            .ease('linear')
+            .style('fill', basecolour);
+      }
+      // console.log(flowdata[i].source.toLowerCase() + ' ' + flowdata[i].destination.toLowerCase());
     }
   };
 
   function connectLocations(name1, name2, delay) {
-    var loc1 = path.centroid(d3.select("[name=\"" + name1.toLowerCase() + "\"]").datum());
-    var loc2 = path.centroid(d3.select("[name=\"" + name2.toLowerCase() + "\"]").datum());
+    var centroid1 = path.centroid(name1);
+    var centroid2 = path.centroid(name2);
 
     var connector = g.append('line')
       .style('stroke', 'blue')
-      .attr('x1', loc1[0])
-      .attr('y1', loc1[1])
-      .attr('x2', loc2[0])
-      .attr('y2', loc2[1])
+      .attr('x1', centroid1[0])
+      .attr('y1', centroid1[1])
+      .attr('x2', centroid2[0])
+      .attr('y2', centroid2[1])
       .on('mouseover', function() {
         var line = d3.select(this);
         line.style('stroke', 'red')
@@ -266,11 +300,11 @@ var PropNets = (function() {
           .style('stroke-width', '1px');
       });
 
-    console.log(connector);
-    var xdif = loc2[0] - loc1[0];
-    var ydif = loc2[1] - loc1[1];
+    // console.log(connector);
+    var xdif = centroid2[0] - centroid1[0];
+    var ydif = centroid2[1] - centroid1[1];
     var totalLength = Math.sqrt(xdif * xdif + ydif * ydif);
-    console.log('total line length: ' + totalLength);
+    // console.log('total line length: ' + totalLength);
 
     connector
       .attr('stroke-dasharray', totalLength + ' ' + totalLength)
@@ -289,6 +323,10 @@ var PropNets = (function() {
     //     .attr("stroke-dashoffset", totalLength);
   }
 
+  function getDatumByName(name) {
+    var item = d3.select('[name=\"' + name.toLowerCase() + '\"]').datum();
+    return item;
+  }
   // function for handling the zooming when clicked on a place on the map
   // function clicked(d) {
   //   var centroid = path.centroid(d),
@@ -346,7 +384,7 @@ var PropNets = (function() {
         var temp = d3.csv.parse(evt.target.result);
         console.log(temp);
 
-        if(temp[0].length == 3)
+        if (temp[0].length == 3)
           csvdata = temp;
         else {
           flowdata = temp;
