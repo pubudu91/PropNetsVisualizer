@@ -312,8 +312,8 @@ var PropNets = (function() {
       .transition()
       .duration(5000)
       .delay(delay)
-      .ease('linear')
-      .attr('stroke-dashoffset', 0);
+      .ease('linear');
+      // .attr('stroke-dashoffset', 0);
 
     // svg.on("click", function(){
     //   path
