@@ -73,55 +73,61 @@
         </paper-toolbar>
 
         <paper-tabs selected="{{selected}}">
-          <paper-tab name="tab1">Tab 1</paper-tab>
-          <paper-tab name="tab2">Tab 2</paper-tab>
-          <paper-tab name="tab3">Tab 3</paper-tab>
+          <paper-tab name="tab1">Data Files</paper-tab>
+          <paper-tab name="tab2">Visualization Options</paper-tab>
         </paper-tabs>
 
         <iron-pages selected="0">
           <!-- TAB #1 -->
           <div class="left-padding">
-            <input type="file" id="files" name="files[]" single />
-            <select name="selectfile" id="selectfile" hidden="true"></select>
-            <input type="submit" id="upload" value="Draw Map" disabled="true" />
-          </div>
-
-          <!-- TAB #2 -->
-          <div class="left-padding">
-            <input type="file" id="csvnetwork" name="files[]" hidden="true" multiple/>
             <div>
-              <h5>Upload network data:</h5>
+              <h4>Upload Shape files:</h4>
+              <input type="file" id="files" name="files[]" single hidden="true" />
+              <!-- <input type="submit" id="upload" value="Draw Map" disabled="true" /> -->
+              <paper-icon-button icon="file-upload" id="mapuploadbtn"></paper-icon-button>
+              <output id="mapfilename"></output>
+              <select name="selectfile" id="selectfile" hidden="true"></select>
+              <paper-icon-button icon="send" id="drawmap" hidden="true"></paper-icon-button>
+              <br>
+              <span>Select naming scheme:
+                <select id="selectnamingscheme"></select>
+              </span>
+            </div>
+            <hr>
+            <div>
+              <h4>Upload network data:</h4>
+              <input type="file" id="csvnetwork" name="files[]" hidden="true" multiple/>
               <paper-icon-button icon="file-upload" id="csvuploadbtn"></paper-icon-button>
               <output id="networkfilename"></output>
-              <paper-icon-button icon="send" id="parsenetwork" hidden="true">
-                <!-- <input type="submit" id="parsenetwork" /> -->
-              </paper-icon-button>
-              <!-- <input type="submit" id="visualize" value="Visualize"/> -->
+              <paper-icon-button icon="send" id="parsenetwork" hidden="true"></paper-icon-button>
             </div>
-
+            <hr>
             <div>
-              <h5>Upload network flow data:</h5>
+              <h4>Upload network flow data:</h4>
               <input type="file" id="csvfiles" name="files[]" hidden="true" multiple />
               <paper-icon-button icon="file-upload" id="flowuploadbtn"></paper-icon-button>
               <output id="flowfilename"></output>
               <paper-icon-button icon="send" id="parse" hidden="true">
-                <!-- <input type="submit" id="parse" /> -->
-                <!-- <input type="submit" id="visualize" value="Visualize" /> -->
             </div>
+
             <br>
+
             <div style="text-align: center;">
               <paper-button raised id="visualizebtn">
                 <paper-icon-button icon="check" class="remove-padding"></paper-icon-button>
                 Visualize
               </paper-button>
             </div>
-            <div id="details"></div>
-            <br />
-            <div id="decoded" style="width: 250px;"></div>
+
           </div>
 
-          <!-- TAB #3 -->
-          <div>Three</div>
+          <!-- TAB #2 -->
+          <div class="left-padding">
+            <div id="coloursoptions">
+              <div>Set base colour of the map: <input type="color" id="basecolourpicker" value=""></div>
+              <div>Set the colour of the propagating line segments: <input type="color" id="linesegmentcolourpicker" value=""></div>
+            </div>
+          </div>
         </iron-pages>
 
       </paper-header-panel>
@@ -132,7 +138,7 @@
         <paper-toolbar id="header">
           <paper-icon-button icon="menu" id="toggleMenu"></paper-icon-button>
           <span class="title">PropNets Visualizer</span>
-          <paper-icon-button icon="refresh"></paper-icon-button>
+          <paper-icon-button icon="refresh" id="refresh"></paper-icon-button>
           <paper-icon-button icon="add">+</paper-icon-button>
         </paper-toolbar>
 
@@ -152,9 +158,16 @@
       var drawerPanel = document.getElementById('drawerPanel');
       var tabs = document.querySelector('paper-tabs');
       var containers = document.getElementsByClassName('tabcontent');
+
+      /* The file input elements */
       var csvnetwork = document.getElementById('csvnetwork');
       var csvflowdata = document.getElementById('csvfiles');
-      var flowdatauploadbtn = document.getElementById('flowuploadbtn');
+      var mapfile = document.getElementById('files');
+
+      /* The file input confirmation buttons */
+      var csvuploadbtn = document.getElementById('csvuploadbtn');
+      var mapuploadbtn = document.getElementById('mapuploadbtn');
+      var flowuploadbtn = document.getElementById('flowuploadbtn');
 
       menu.addEventListener('click', function() {
         drawerPanel.togglePanel();
@@ -164,6 +177,11 @@
         drawerPanel.togglePanel();
       });
 
+      /* Trigger the hidden file input fields */
+      mapuploadbtn.addEventListener('click', function() {
+        $('#files').click();
+      });
+
       csvuploadbtn.addEventListener('click', function() {
         $('#csvnetwork').click();
       });
@@ -171,19 +189,29 @@
       flowuploadbtn.addEventListener('click', function() {
         $('#csvfiles').click();
       });
+      /* End of input field trigger */
+
+      /* Enable the confirmation buttons and add the filename */
+      mapfile.addEventListener('change', function() {
+        document.getElementById('mapfilename').value = mapfile.value.replace(/.*[\/\\]/, '');
+        document.getElementById('drawmap').hidden = false;
+      });
 
       csvnetwork.addEventListener('change', function() {
         document.getElementById('networkfilename').value = csvnetwork.value.replace(/.*[\/\\]/, '');
         document.getElementById('parsenetwork').hidden = false;
       });
 
-      csvfiles.addEventListener('change', function() {
+      csvflowdata.addEventListener('change', function() {
         document.getElementById('flowfilename').value = csvflowdata.value.replace(/.*[\/\\]/, '');
         document.getElementById('parse').hidden = false;
       });
 
-      console.log(tabs);
-      console.log(containers);
+      document.getElementById('basecolourpicker').addEventListener('change', PropNets.changeBaseColour, false);
+      document.getElementById('linesegmentcolourpicker').addEventListener('change', PropNets.changeLineSegmentColour, false);
+
+      // console.log(tabs);
+      // console.log(containers);
 
       tabs.addEventListener('click', function(e) {
         var pages = document.querySelector('iron-pages');
@@ -191,21 +219,23 @@
       });
     </script>
     <script type="text/javascript">
-      PropNets.init('files', 'upload', 'selectfile');
+      PropNets.init('files', 'drawmap', 'selectfile');
       // DataHandler.init();
       document.getElementById('parsenetwork').addEventListener('click', function() {
         PropNets.readCSVFile('csvnetwork');
-      })
+      });
 
       document.getElementById('parse').addEventListener('click', function() {
         // PropNets.setData(DataHandler.decodedData);
         PropNets.readCSVFile('csvfiles');
-      })
+      });
 
       document.getElementById('visualizebtn').addEventListener('click', function() {
         // PropNets.setData(DataHandler.decodedData);
         PropNets.visualize();
-      })
+      });
+
+      PropNets.refresh('refresh');
     </script>
   </body>
 
