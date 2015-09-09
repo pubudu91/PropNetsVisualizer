@@ -45,6 +45,13 @@ var PropNets = (function(d3) {
   var currentNameScheme; // Currently selected naming scheme
   var currentMapJSON; // GEOJson of the current map
 
+  /* ANIMATION */
+  var totalDuration = 30000; // Total duration of the animation. Default = 30 secs
+  var segmentDuration = 5000; // Duration of the animation of a single segment. Default = 5 secs
+  var regionDuration = 500; // Duration of the animation of a region colouring. Default = 500 ms
+  var strokeWidth = 2; // Width of the animted line segmens. Default = 2 px
+  var strokeLength = 50; // Length of the animted line segmens. Default = 50 px
+
   MOD.setData = function(data) {
     flowdata = data;
     // console.log(flowdata);
@@ -78,12 +85,10 @@ var PropNets = (function(d3) {
 
         if ($.isArray(decodedShapeFile)) {
           var i = parseInt(selectfileDOM.value);
-          // drawMap(decodedShapeFile[i]);
           mapfile = decodedShapeFile[i];
           // console.log(mapfile.fileName);
           // console.log(mapfile.features);
         } else {
-          // drawMap(decodedShapeFile);
           mapfile = decodedShapeFile;
           // console.log(mapfile.fileName);
           // console.log(mapfile.features);
@@ -322,9 +327,16 @@ var PropNets = (function(d3) {
       });
   }
 
+  //------------------------------------ VISUALIZE FUNCTION --------------------------------------------
+
   MOD.visualize = function() {
     if (flowdata == null) {
-      alert('No data available for visualizing. Please add a data file');
+      alert('No flow data available for visualizing. Please add a flow data file');
+      return;
+    }
+
+    if (csvdata == null) {
+      alert('Please add/confirm a network layout file');
       return;
     }
 
@@ -334,47 +346,52 @@ var PropNets = (function(d3) {
 
     maxweight = getMaxWeight(); // retrieve the maximum weight in the network before using it
     gradientMapper = d3.scale.quantize().domain([0, maxweight]).range(colourgradient);
-    var gradientUnitSize = maxweight / colourgradient.length; // divide the range of weights in to the number of colours in the gradient
+    // var gradientUnitSize = maxweight / colourgradient.length; // divide the range of weights in to the number of colours in the gradient
     addLegend();
     for (var i = 0; i < flowdata.length; i++) {
       var relativeTime = Date.parse(flowdata[i].timestamp) - baseTime;
       var src = getDatumByName(flowdata[i].source);
       var dest = getDatumByName(flowdata[i].destination);
+      var colour;
 
-      connectLocations(src, dest, relativeTime / (maxTime - baseTime) * 30000);
+      connectLocations(src, dest, relativeTime / (maxTime - baseTime) * totalDuration);
+
       if (flowdata[i].source_infected.toLowerCase() == 'true') {
         // var colour = getColour(getWeight(flowdata[i].source, flowdata[i].destination), gradientUnitSize);
-        var colour = gradientMapper(getWeight(flowdata[i].source, flowdata[i].destination));
-        // console.log(colour);
-        d3.select('[name=\"' + flowdata[i].source.toLowerCase() + '\"]')
-          .transition()
-          .duration(500)
-          .delay(relativeTime / (maxTime - baseTime) * 30000)
-          .ease('linear')
-          .style('fill', colour);
-        // console.log("inside infected: " + '[name=\"' + flowdata[i].source.toLowerCase() + '\"]');
+        colour = gradientMapper(getWeight(flowdata[i].source, flowdata[i].destination));
+        animateRegionColouring(flowdata[i].source, colour, relativeTime, maxTime, baseTime);
+      } else {
+        animateRegionColouring(flowdata[i].source, basecolour, relativeTime, maxTime, baseTime);
       }
 
       if (flowdata[i].destination_infected.toLowerCase() == 'true') {
-        d3.select('[name=\"' + flowdata[i].destination.toLowerCase() + '\"]')
-          .transition()
-          .duration(500)
-          .delay(relativeTime / (maxTime - baseTime) * 30000)
-          .ease('linear')
-          .style('fill', basecolour);
+        colour = gradientMapper(getWeight(flowdata[i].source, flowdata[i].destination));
+        animateRegionColouring(flowdata[i].destination, colour, relativeTime, maxTime, baseTime);
+      } else {
+        animateRegionColouring(flowdata[i].destination, basecolour, relativeTime, maxTime, baseTime);
       }
-      // console.log(flowdata[i].source.toLowerCase() + ' ' + flowdata[i].destination.toLowerCase());
-      // console.log(flowdata[i].source + ' to ' + flowdata[i].destination + ': ' + getWeight(flowdata[i].source, flowdata[i].destination));
     }
   };
+
+  //-------------------------- END OF VISUALIZE FUNCTION ----------------------------------------------------
+
+  function animateRegionColouring(region, colour, relativeTime, maxTime, baseTime) {
+    d3.select('[name=\"' + region.toLowerCase() + '\"]')
+      .transition()
+      .duration(500)
+      .delay(relativeTime / (maxTime - baseTime) * totalDuration)
+      .ease('linear')
+      .style('fill', colour);
+    console.log(totalDuration);
+  }
 
   function connectLocations(src, dest, delay) {
     var centroid1 = path.centroid(src);
     var centroid2 = path.centroid(dest);
 
     var connector = g.append('line')
-      .style('stroke', 'black')
-      .style('stroke-width', '2px')
+      .style('stroke', lineSegmentColour)
+      .style('stroke-width', strokeWidth + 'px')
       .attr('x1', centroid1[0])
       .attr('y1', centroid1[1])
       .attr('x2', centroid2[0])
@@ -383,7 +400,6 @@ var PropNets = (function(d3) {
         var line = d3.select(this);
         line.style('stroke', 'red')
           .style('stroke-width', '3px');
-
       })
       .on('mouseout', function() {
         var line = d3.select(this);
@@ -398,12 +414,12 @@ var PropNets = (function(d3) {
     // console.log('total line length: ' + totalLength);
 
     connector
-      .attr('stroke-dasharray', 50 + ' ' + totalLength)
-      .attr('stroke-dashoffset', (totalLength + 100))
+      .attr('stroke-dasharray', strokeLength + ' ' + totalLength)
+      .attr('stroke-dashoffset', (totalLength + strokeLength * 2))
       .transition()
-      .duration(5000)
+      .duration(segmentDuration)
       .delay(delay)
-      .attr('stroke-dashoffset', (totalLength + 100))
+      .attr('stroke-dashoffset', (totalLength + strokeLength * 2))
       .ease('linear')
       .attr('stroke-dashoffset', -totalLength);
   }
@@ -485,14 +501,14 @@ var PropNets = (function(d3) {
     document.getElementById('selectfile').hidden = true;
   }
 
-  function getColour(weight, unit) {
-    var index = parseInt(weight / unit);
-    // console.log('index: ' + index + ' ' + weight + ' ' + unit);
-    if (index > (colourgradient.length - 1))
-      index = colourgradient.length - 1;
-
-    return colourgradient[index];
-  }
+  // function getColour(weight, unit) {
+  //   var index = parseInt(weight / unit);
+  //   // console.log('index: ' + index + ' ' + weight + ' ' + unit);
+  //   if (index > (colourgradient.length - 1))
+  //     index = colourgradient.length - 1;
+  //
+  //   return colourgradient[index];
+  // }
 
   function getMaxWeight() {
     if (networklayout == null)
@@ -529,11 +545,29 @@ var PropNets = (function(d3) {
   }
 
   MOD.changeLineSegmentColour = function changeLineSegmentColour(evt) {
-    if(g == null)
+    if (g == null)
       return;
 
     lineSegmentColour = evt.target.value;
     g.selectAll('line').style('stroke', lineSegmentColour);
+  }
+
+  MOD.changeTotalDuration = function changeTotalDuration(evt) {
+    totalDuration = parseInt(evt.target.value) * 1000; // Multiply by a factor of 1000 since we are using ms
+    console.log('Duration: ' + totalDuration);
+  }
+
+  MOD.changeSegmentDuration = function changeSegmentDuration(evt) {
+    segmentDuration = parseInt(evt.target.value) * 1000; // Multiply by a factor of 1000 since we are using ms
+    console.log('Duration: ' + segmentDuration);
+  }
+
+  MOD.changeStrokeWidth = function changeStrokeWidth(evt) {
+    strokeWidth = parseInt(evt.target.value);
+  }
+
+  MOD.changeStrokeLength = function changeStrokeLength(evt) {
+    strokeLength = parseInt(evt.target.value);
   }
 
   return MOD;

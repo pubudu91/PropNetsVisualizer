@@ -20,6 +20,7 @@
     <link rel="import" href="../bower_components/paper-drawer-panel/paper-drawer-panel.html">
     <link rel="import" href="../bower_components/paper-button/paper-button.html">
     <link rel="import" href="../bower_components/iron-pages/iron-pages.html">
+    <link rel="import" href="../bower_components/paper-button/paper-button.html">
     <!-- <link rel="import" href="shapetest/shapefile.html"> -->
 
     <link rel="stylesheet" href="shapetest/shapefile.css" charset="utf-8">
@@ -64,7 +65,7 @@
   </head>
 
   <body unresolved>
-    <paper-drawer-panel id="drawerPanel" force-narrow drawer-width="30em">
+    <paper-drawer-panel id="drawerPanel" force-narrow drawer-width="30em" disable-swipe>
       <paper-header-panel drawer>
 
         <paper-toolbar>
@@ -124,8 +125,38 @@
           <!-- TAB #2 -->
           <div class="left-padding">
             <div id="coloursoptions">
+              <h4>Colour &amp; stroke Options:</h4>
               <div>Set base colour of the map: <input type="color" id="basecolourpicker" value=""></div>
               <div>Set the colour of the propagating line segments: <input type="color" id="linesegmentcolourpicker" value=""></div>
+            </div>
+
+            <div id="strokeoptions">
+              <h4>Stroke Options</h4>
+              <div>
+                Width of line segments (px):
+                <input type="range" id="strokewidthslider" value="2" min="1" max="5" oninput="strokewidthvalue.value = parseInt(strokewidthslider.value)">
+                <output id="strokewidthvalue">2</output>
+              </div>
+              <div>
+                Length of line segments (px):
+                <input type="range" id="strokelengthslider" value="50" min="5" max="300" oninput="strokelengthvalue.value = parseInt(strokelengthslider.value)">
+                <output id="strokelengthvalue">50</output>
+              </div>
+            </div>
+
+            <div id="animationoptions">
+              <h4>Animation Options:</h4>
+              <div>
+                Total duration (s):
+                <input type="range" id="totaldurationslider" value="30" min="5" max="600" oninput="durationvalue.value = parseInt(totaldurationslider.value)">
+                <output id="durationvalue">30</output>
+              </div>
+
+              <div>
+                Duration of a single segment (s):
+                <input type="range" id="segmentdurationslider" value="5" min="0.1" max="15" oninput="segmentdurationvalue.value = parseInt(segmentdurationslider.value)">
+                <output id="segmentdurationvalue">5</output>
+              </div>
             </div>
           </div>
         </iron-pages>
@@ -143,7 +174,7 @@
         </paper-toolbar>
 
         <div id="container">
-
+          <google-map latitude="37.77493" longitude="-122.41942"></google-map>
           <div id="map"></div>
           <div id="tooltip"></div>
         </div>
@@ -209,6 +240,10 @@
 
       document.getElementById('basecolourpicker').addEventListener('change', PropNets.changeBaseColour, false);
       document.getElementById('linesegmentcolourpicker').addEventListener('change', PropNets.changeLineSegmentColour, false);
+      document.getElementById('totaldurationslider').addEventListener('change', PropNets.changeTotalDuration, false);
+      document.getElementById('segmentdurationslider').addEventListener('change', PropNets.changeSegmentDuration, false);
+      document.getElementById('strokewidthslider').addEventListener('change', PropNets.changeStrokeWidth, false);
+      document.getElementById('strokelengthslider').addEventListener('change', PropNets.changeStrokeLength, false);
 
       // console.log(tabs);
       // console.log(containers);
