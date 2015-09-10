@@ -3,6 +3,41 @@ html, body, svg, rect {
   padding: 0;
   border: 0;
 }
+
+html,
+body {
+  margin: 0;
+  background-color: #B3D1FF;
+  font-family: 'RobotoDraft', sans-serif;
+  font-size: 14px;
+}
+
+#networkfilename {
+  font-size: 14px;
+}
+
+#visualizebtn {
+  /*width: 150px;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+  padding-bottom: 5px;*/
+  text-align: center;
+  /*background: rgb(25, 92, 193);*/
+  background: rgb(6, 149, 29);
+  color: #fff;
+}
+
+#mainmap {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+google-map {
+  height: 600px;
+}
+
 #container {
   width: 100%;
   margin: 0;
@@ -93,4 +128,30 @@ html, body, svg, rect {
   stroke-width: 2px;
   fill: Orange;
   fill-opacity: .3;
+}
+
+#gradientsamples {
+  text-align: center;
+}
+
+.palette {
+  cursor: pointer;
+  display: inline-block;
+  vertical-align: bottom;
+  /*margin: 4px 0 4px 6px;*/
+  /*padding: 4px;*/
+  padding-right: 5px;
+  background: #fff;
+  /*border: solid 1px #aaa;*/
+}
+
+.swatch {
+  display: block;
+  vertical-align: middle;
+  width: 10px;
+  height: 10px;
+}
+
+#drawer {
+  padding-bottom: 30px;
 }
